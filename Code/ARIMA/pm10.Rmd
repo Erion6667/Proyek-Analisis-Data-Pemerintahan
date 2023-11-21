@@ -1,0 +1,80 @@
+
+1. Aktifkan beberapa library
+```{r}
+library(TSA)
+library(forecast)
+```
+2. Membaca dataset
+```{r}
+data1<-read.csv("group by ISPU DKI Jakarta 2010-2021.csv",header=TRUE)
+data1<-data1$pm10
+head(data1)
+```
+3. Plot time series data University of Hong Kong
+```{r}
+ts.plot(data1, xlab="Time Period ", ylab="scores_teaching", main= "Time Series Plot")
+points(data1)
+```
+4. Uji Formal Stasioneritas Data
+```{r}
+tseries::adf.test(ts(data1))
+```
+5. Spesifikasi Model: Plot ACF
+```{r}
+acf(ts(data1))
+pacf(ts(data1))
+```
+6. Estimasi model
+```{r}
+model.arma11<-arima(ts(data1), order = c(1,0,1), method = "ML")
+lmtest::coeftest(model.arma11)
+model.ar2<-arima(ts(data1), order = c(2,0,0), method = "ML")
+lmtest::coeftest(model.ar2)
+model.arma21<-arima(ts(data1), order = c(2,0,1), method = "ML")
+lmtest::coeftest(model.arma21)
+model.arma21b<-arima(ts(data1), order = c(2,0,1), method = "ML",include.mean=F)
+lmtest::coeftest(model.arma21b)
+model.sarma200001_6<-arima(ts(data1), order = c(2,0,0), 
+seasonal=list(order=c(0,0,1),period=6),method = "ML")
+lmtest::coeftest(model.sarma200001_6)
+model.sarma201001_6<-arima(ts(data1), order = c(2,0,1), 
+seasonal=list(order=c(0,0,1),period=6),method = "ML")
+lmtest::coeftest(model.sarma201001_6)
+model.sarma200002_6<-arima(ts(data1), order = c(2,0,0), 
+seasonal=list(order=c(0,0,2),period=6),method = "ML")
+lmtest::coeftest(model.sarma200002_6)
+```
+```{r}
+sisaan <- model.arma21$residuals
+# Eksplorasi
+par(mfrow=c(2,2))
+qqnorm(sisaan)
+qqline(sisaan, col = "blue", lwd = 2)
+plot(c(1:length(sisaan)),sisaan)
+acf(sisaan)
+pacf(sisaan)
+```
+```{r}
+# Uji formal normalitas data
+ks.test(sisaan,"pnorm")
+```
+```{r}
+# Uji nilai tengah sisaan
+t.test(sisaan, mu = 0, alternative = "two.sided")
+```
+```{r}
+# Uji autokorelasi
+Box.test(sisaan, lag = 23 ,type = "Ljung")
+```
+```{r}
+#Overfitting Model1
+model.model.arma21<-arima(ts(data1), order = c(2,0,1),method = "ML")
+lmtest::coeftest(model.arma21)
+```
+```{r}
+#Peramalan
+(ramalan<- forecast::forecast(ts(data1),model=model.arma21, h=9))
+```
+```{r}
+plot(ramalan)
+```
